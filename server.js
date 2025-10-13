@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-const authRoutes = require("./routes/authRoutes");
+const authRoutes = require("./routes/auth");
 const protect = require("./middleware/authMiddleware");
 
 const app = express();

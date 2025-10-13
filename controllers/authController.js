@@ -6,7 +6,8 @@ const {
   generateToken,
   generateRefreshToken,
   verifyRefreshToken,
-} = require("../utils/tokenUtils");
+} = require("../utils/token"); // ← correct file name
+
 
 let refreshTokens = []; // ⚠️ Temporary store — use Redis or DB in production
 

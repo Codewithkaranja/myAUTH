@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
 const authRoutes = require("./routes/auth");
+const registerRoutes = require("./routes/register"); // ✅ Add register routes
 const protect = require("./middleware/authMiddleware");
 
 const app = express();
@@ -25,16 +26,14 @@ app.use(
 // ==========================
 // === DATABASE CONNECTION ===
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
 // ==========================
 // === ROUTES ===
 app.use("/api/auth", authRoutes);
+app.use("/api/auth", registerRoutes); // ✅ Mount register routes under same /api/auth
 
 // Example protected route
 app.get("/api/protected", protect, (req, res) => {
@@ -54,23 +53,19 @@ app.use((req, res) => {
 
 // ==========================
 // === SERVER START ===
-// ==========================
-// === SERVER START ===
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
   console.log(`🚀 Server running on port ${PORT}`);
 
-  // Log registered routes safely
+  // Log registered routes
   if (app._router && app._router.stack) {
     console.log("📌 Registered Routes:");
     app._router.stack.forEach((middleware) => {
       if (middleware.route) {
-        // routes registered directly on the app
         const methods = Object.keys(middleware.route.methods).join(", ").toUpperCase();
         console.log(`${methods} - ${middleware.route.path}`);
       } else if (middleware.name === "router" && middleware.handle.stack) {
-        // router middleware
         middleware.handle.stack.forEach((handler) => {
           if (handler.route) {
             const methods = Object.keys(handler.route.methods).join(", ").toUpperCase();
@@ -81,4 +76,3 @@ app.listen(PORT, () => {
     });
   }
 });
-

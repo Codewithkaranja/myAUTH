@@ -209,6 +209,7 @@
     </div>
 
     <script>
+      const API_URL = "https://myauth-umk7.onrender.com";
       const form = document.getElementById("registerForm");
       const passwordInput = document.getElementById("password");
       const msgEl = document.getElementById("message");
@@ -229,11 +230,10 @@
           confirmField.type === "password" ? "text" : "password";
       });
 
-      // 🔐 Live password strength indicator
+      // 🔐 Live password strength
       passwordInput.addEventListener("input", () => {
         const password = passwordInput.value;
         let strength = 0;
-
         if (password.match(/[a-z]/)) strength++;
         if (password.match(/[A-Z]/)) strength++;
         if (password.match(/[0-9]/)) strength++;
@@ -252,10 +252,19 @@
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
+        const firstName = document.getElementById("firstName").value.trim();
+        const lastName = document.getElementById("lastName").value.trim();
+        const gender = document.getElementById("gender").value;
+        const dob = document.getElementById("dob").value;
+        const address = document.getElementById("address").value.trim();
+        const idNumber = document.getElementById("idNumber").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        const email = document.getElementById("email").value.trim();
         const password = passwordInput.value;
         const confirmPassword =
           document.getElementById("confirmPassword").value;
 
+        // Password validation
         const passwordRegex =
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
         if (!passwordRegex.test(password)) {
@@ -271,16 +280,25 @@
           return;
         }
 
-        const formData = new FormData(form);
-
         try {
           msgEl.style.color = "#4f46e5";
           msgEl.innerText = "Registering...";
           noteEl.innerText = "";
 
-          const res = await fetch("/api/auth/register", {
+          const res = await fetch(`${API_URL}/api/auth/register`, {
             method: "POST",
-            body: formData,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              firstName,
+              lastName,
+              gender,
+              dob,
+              address,
+              idNumber,
+              phone,
+              email,
+              password,
+            }),
           });
 
           const data = await res.json();
@@ -288,17 +306,16 @@
           if (res.status === 201) {
             msgEl.style.color = "#16a34a";
             msgEl.innerText = "Registration successful!";
-            noteEl.innerHTML =
-              "📩 Please check your email to verify your account before logging in.";
+            noteEl.innerHTML = "📩 Please verify your email before logging in.";
             form.reset();
             strengthBar.style.width = "0%";
           } else {
             msgEl.style.color = "#dc2626";
             msgEl.innerText = data.message || "Registration failed.";
           }
-        } catch (err) {
+        } catch {
           msgEl.style.color = "#dc2626";
-          msgEl.innerText = "Network error, please try again.";
+          msgEl.innerText = "Network error. Please try again.";
         }
       });
     </script>

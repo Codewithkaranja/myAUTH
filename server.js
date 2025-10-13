@@ -21,7 +21,7 @@ app.use(express.static("public")); // serve HTML files from /public
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000", // dynamic CORS
+    origin: process.env.CLIENT_URL || "https://myauth-umk7.onrender.com", // dynamic CORS
     credentials: true, // allow cookies
   })
 );

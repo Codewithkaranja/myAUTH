@@ -126,6 +126,7 @@
     </div>
 
     <script>
+      const API_URL = "https://myauth-umk7.onrender.com";
       const form = document.getElementById("loginForm");
       const msgEl = document.getElementById("message");
       const resendEl = document.getElementById("resend");
@@ -141,17 +142,21 @@
         resendEl.style.display = "none";
 
         try {
-          const res = await fetch("/api/auth/login", {
+          const res = await fetch(`${API_URL}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include", // ✅ Include cookies
             body: JSON.stringify({ email, password }),
           });
 
           const data = await res.json();
 
-          if (data.accessToken) {
-            localStorage.setItem("accessToken", data.accessToken);
-            localStorage.setItem("refreshToken", data.refreshToken);
+          if (res.ok) {
+            // Save tokens in localStorage
+            if (data.accessToken)
+              localStorage.setItem("accessToken", data.accessToken);
+            if (data.refreshToken)
+              localStorage.setItem("refreshToken", data.refreshToken);
 
             msgEl.style.color = "#16a34a";
             msgEl.innerText = "Login successful! Redirecting...";
@@ -160,7 +165,7 @@
             msgEl.style.color = "#dc2626";
             msgEl.innerText = data.message || "Login failed";
 
-            // If not verified, show resend option
+            // Show resend option if account is unverified
             if (data.message && data.message.toLowerCase().includes("verify")) {
               resendEl.style.display = "block";
             }
@@ -184,16 +189,21 @@
         msgEl.innerText = "Resending verification email...";
         msgEl.style.color = "#4f46e5";
 
-        const res = await fetch("/api/auth/resend-verification", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
+        try {
+          const res = await fetch(`${API_URL}/api/auth/resend-verification`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
 
-        const data = await res.json();
-        msgEl.style.color = data.success ? "#16a34a" : "#dc2626";
-        msgEl.innerText =
-          data.message || "If registered, a new verification email was sent.";
+          const data = await res.json();
+          msgEl.style.color = res.ok ? "#16a34a" : "#dc2626";
+          msgEl.innerText =
+            data.message || "If registered, a new verification email was sent.";
+        } catch {
+          msgEl.style.color = "#dc2626";
+          msgEl.innerText = "Network error. Please try again.";
+        }
       });
     </script>
   </body>

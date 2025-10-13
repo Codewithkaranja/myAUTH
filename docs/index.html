@@ -2,9 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Dashboard</title>
+    <title>Dashboard | MyAuth</title>
     <style>
-      /* ----------------- Reset & base ----------------- */
       * {
         margin: 0;
         padding: 0;
@@ -34,7 +33,6 @@
         color: #4b5563;
       }
 
-      /* ----------------- Buttons ----------------- */
       button {
         background-color: #4f46e5;
         color: #fff;
@@ -53,7 +51,6 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
 
-      /* ----------------- Protected data box ----------------- */
       #protectedData {
         width: 100%;
         max-width: 600px;
@@ -73,7 +70,6 @@
         color: #1f2937;
       }
 
-      /* ----------------- Logout section ----------------- */
       .top-bar {
         width: 100%;
         max-width: 600px;
@@ -83,7 +79,6 @@
         margin-bottom: 20px;
       }
 
-      /* Responsive */
       @media (max-width: 640px) {
         body {
           padding: 20px 10px;
@@ -101,53 +96,111 @@
       <button id="logoutBtn">Logout</button>
     </div>
 
-    <p id="welcome">Welcome, user!</p>
+    <p id="welcome">Welcome!</p>
 
     <h3>Protected Data:</h3>
     <button id="fetchDataBtn">Fetch Data</button>
     <pre id="protectedData">Click "Fetch Data" to load protected content.</pre>
 
     <script>
-      // ----------------- JWT check -----------------
-      const token = localStorage.getItem("token");
-      if (!token) {
-        alert("You are not logged in!");
-        window.location.href = "login.html";
+      const API_URL = "https://myauth-umk7.onrender.com";
+
+      // Save tokens
+      function saveTokens(data) {
+        if (data.accessToken)
+          localStorage.setItem("accessToken", data.accessToken);
+        if (data.refreshToken)
+          localStorage.setItem("refreshToken", data.refreshToken);
       }
 
-      const user = JSON.parse(atob(token.split(".")[1]));
-      document.getElementById("welcome").innerText = `Welcome, ${user.email}!`;
+      // Refresh access token
+      async function refreshAccessToken() {
+        try {
+          const refreshToken = localStorage.getItem("refreshToken");
+          if (!refreshToken) throw new Error("No refresh token available");
 
-      // ----------------- Fetch protected data -----------------
+          const res = await fetch(`${API_URL}/api/auth/refresh-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          const data = await res.json();
+          if (!res.ok)
+            throw new Error(data.message || "Failed to refresh token");
+
+          saveTokens(data);
+          return true;
+        } catch {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          return false;
+        }
+      }
+
+      // Fetch protected data
+      async function fetchProtectedData() {
+        try {
+          let accessToken = localStorage.getItem("accessToken");
+          let res = await fetch(`${API_URL}/api/protected`, {
+            headers: { Authorization: "Bearer " + accessToken },
+            credentials: "include",
+          });
+
+          // If unauthorized, try refresh token
+          if (res.status === 401) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+              accessToken = localStorage.getItem("accessToken");
+              res = await fetch(`${API_URL}/api/protected`, {
+                headers: { Authorization: "Bearer " + accessToken },
+                credentials: "include",
+              });
+            } else {
+              throw new Error("Session expired");
+            }
+          }
+
+          if (!res.ok) throw new Error("Failed to fetch data");
+          const data = await res.json();
+
+          document.getElementById(
+            "welcome"
+          ).innerText = `Welcome, ${data.user.email}!`;
+          document.getElementById("protectedData").innerText = JSON.stringify(
+            data,
+            null,
+            2
+          );
+        } catch (err) {
+          alert(
+            "You are not logged in or session expired. Redirecting to login page."
+          );
+          window.location.href = "login.html";
+        }
+      }
+
+      fetchProtectedData();
+
       document
         .getElementById("fetchDataBtn")
-        .addEventListener("click", async () => {
-          try {
-            const res = await fetch("/api/protected", {
-              headers: { Authorization: "Bearer " + token },
-            });
-            const data = await res.json();
-            document.getElementById("protectedData").innerText = JSON.stringify(
-              data,
-              null,
-              2
-            );
-          } catch (err) {
-            document.getElementById("protectedData").innerText =
-              "Error fetching data";
-          }
-        });
+        .addEventListener("click", fetchProtectedData);
 
-      // ----------------- Logout -----------------
       document
         .getElementById("logoutBtn")
         .addEventListener("click", async () => {
-          await fetch("/api/auth/logout", {
-            method: "POST",
-            credentials: "include",
-          });
-          localStorage.removeItem("token");
-          window.location.href = "login.html";
+          try {
+            await fetch(`${API_URL}/api/auth/logout`, {
+              method: "POST",
+              credentials: "include",
+            });
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            window.location.href = "login.html";
+          } catch {
+            alert("Error logging out. Try again.");
+          }
         });
     </script>
   </body>

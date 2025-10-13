@@ -21,7 +21,7 @@ router.post("/register", async (req, res) => {
     await user.save();
 
     // 4. Send email
-    const verifyLink = `http://localhost:3000/api/auth/verify/${token}`;
+    const verifyLink = `https://myauth-umk7.onrender.com/api/auth/verify/${token}`;
     await sendEmail(
       email,
       "Verify your account",

@@ -17,16 +17,11 @@ const userSchema = new mongoose.Schema(
     // Email verification
     isVerified: { type: Boolean, default: false },
     verificationToken: { type: String },
-
-    // Optional: profile pic or avatar
-    profilePic: { type: String },
   },
   { timestamps: true }
 );
 
-//
 // 🔐 Hash password before saving
-//
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -35,16 +30,12 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-//
 // 🔍 Compare passwords
-//
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-//
 // ✉️ Generate email verification token
-//
 userSchema.methods.generateVerificationToken = function () {
   const token = crypto.randomBytes(32).toString("hex");
   this.verificationToken = token;

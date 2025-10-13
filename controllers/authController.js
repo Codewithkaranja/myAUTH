@@ -1,8 +1,7 @@
-// controllers/authController.js
 const User = require("../models/User");
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require("../utils/token");
 
-let refreshTokens = []; // ⚠️ Temporary store — replace with DB or Redis in production
+let refreshTokens = []; // ⚠️ Temporary store — use DB or Redis in production
 
 // -------------------------
 // LOGIN
@@ -13,8 +12,7 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
-    if (!user.isVerified)
-      return res.status(403).json({ message: "Please verify your email before logging in." });
+    if (!user.isVerified) return res.status(403).json({ message: "Please verify your email before logging in." });
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });

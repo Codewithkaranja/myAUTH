@@ -1,23 +1,17 @@
 const express = require("express");
-const {
-  register,
-  login,
-  refreshToken,
-  logout,
-  verifyEmail,
-  resendVerification, // ✅ add this line
-} = require("../controllers/authController");
+const authController = require("../controllers/authController");
+const registerController = require("../controllers/registerController");
 
 const router = express.Router();
 
 // === AUTH ROUTES ===
-router.post("/register", register);
-router.post("/login", login);
-router.post("/refresh-token", refreshToken);
-router.post("/resend-verification", resendVerification);
-router.post("/logout", logout);
+router.post("/register", registerController.register);
+router.post("/login", authController.login);
+router.post("/refresh-token", authController.refreshToken);
+router.post("/resend-verification", registerController.resendVerification);
+router.post("/logout", authController.logout);
 
 // === EMAIL VERIFICATION ===
-router.get("/verify-email/:token", verifyEmail);
+router.get("/verify-email/:token", registerController.verifyEmail);
 
 module.exports = router;

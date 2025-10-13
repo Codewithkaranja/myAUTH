@@ -5,7 +5,6 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
 const authRoutes = require("./routes/auth");
-const registerRoutes = require("./routes/register"); // ✅ Add register routes
 const protect = require("./middleware/authMiddleware");
 
 const app = express();
@@ -32,8 +31,7 @@ mongoose
 
 // ==========================
 // === ROUTES ===
-app.use("/api/auth", authRoutes);
-app.use("/api/auth", registerRoutes); // ✅ Mount register routes under same /api/auth
+app.use("/api/auth", authRoutes); // ✅ All auth routes including register
 
 // Example protected route
 app.get("/api/protected", protect, (req, res) => {
@@ -63,12 +61,16 @@ app.listen(PORT, () => {
     console.log("📌 Registered Routes:");
     app._router.stack.forEach((middleware) => {
       if (middleware.route) {
-        const methods = Object.keys(middleware.route.methods).join(", ").toUpperCase();
+        const methods = Object.keys(middleware.route.methods)
+          .join(", ")
+          .toUpperCase();
         console.log(`${methods} - ${middleware.route.path}`);
       } else if (middleware.name === "router" && middleware.handle.stack) {
         middleware.handle.stack.forEach((handler) => {
           if (handler.route) {
-            const methods = Object.keys(handler.route.methods).join(", ").toUpperCase();
+            const methods = Object.keys(handler.route.methods)
+              .join(", ")
+              .toUpperCase();
             console.log(`${methods} - ${handler.route.path}`);
           }
         });

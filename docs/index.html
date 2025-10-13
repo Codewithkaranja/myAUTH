@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard</title>
+    <style>
+      /* ----------------- Reset & base ----------------- */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background: #f5f7fa;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+        min-height: 100vh;
+      }
+
+      h2 {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #1f2937;
+      }
+
+      #welcome {
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+        color: #4b5563;
+      }
+
+      /* ----------------- Buttons ----------------- */
+      button {
+        background-color: #4f46e5;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin: 5px 0;
+        transition: all 0.2s ease-in-out;
+      }
+
+      button:hover {
+        background-color: #4338ca;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      /* ----------------- Protected data box ----------------- */
+      #protectedData {
+        width: 100%;
+        max-width: 600px;
+        background-color: #fff;
+        padding: 20px;
+        margin-top: 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      h3 {
+        margin-top: 40px;
+        margin-bottom: 10px;
+        color: #1f2937;
+      }
+
+      /* ----------------- Logout section ----------------- */
+      .top-bar {
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      /* Responsive */
+      @media (max-width: 640px) {
+        body {
+          padding: 20px 10px;
+        }
+
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <h2>Dashboard</h2>
+      <button id="logoutBtn">Logout</button>
+    </div>
+
+    <p id="welcome">Welcome, user!</p>
+
+    <h3>Protected Data:</h3>
+    <button id="fetchDataBtn">Fetch Data</button>
+    <pre id="protectedData">Click "Fetch Data" to load protected content.</pre>
+
+    <script>
+      // ----------------- JWT check -----------------
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You are not logged in!");
+        window.location.href = "login.html";
+      }
+
+      const user = JSON.parse(atob(token.split(".")[1]));
+      document.getElementById("welcome").innerText = `Welcome, ${user.email}!`;
+
+      // ----------------- Fetch protected data -----------------
+      document
+        .getElementById("fetchDataBtn")
+        .addEventListener("click", async () => {
+          try {
+            const res = await fetch("/api/protected", {
+              headers: { Authorization: "Bearer " + token },
+            });
+            const data = await res.json();
+            document.getElementById("protectedData").innerText = JSON.stringify(
+              data,
+              null,
+              2
+            );
+          } catch (err) {
+            document.getElementById("protectedData").innerText =
+              "Error fetching data";
+          }
+        });
+
+      // ----------------- Logout -----------------
+      document
+        .getElementById("logoutBtn")
+        .addEventListener("click", async () => {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "include",
+          });
+          localStorage.removeItem("token");
+          window.location.href = "login.html";
+        });
+    </script>
+  </body>
+</html>

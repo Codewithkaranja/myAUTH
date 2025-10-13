@@ -5,7 +5,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
 const authRoutes = require("./routes/auth");
-const protect = require("./middleware/authMiddleware"); // optional: for protected routes
+const protect = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -48,13 +48,37 @@ app.get("/", (req, res) => {
 
 // 404 fallback
 app.use((req, res) => {
+  console.warn(`⚠️ Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ message: "❌ Route not found" });
 });
 
+// ==========================
+// === SERVER START ===
 // ==========================
 // === SERVER START ===
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
   console.log(`🚀 Server running on port ${PORT}`);
+
+  // Log registered routes safely
+  if (app._router && app._router.stack) {
+    console.log("📌 Registered Routes:");
+    app._router.stack.forEach((middleware) => {
+      if (middleware.route) {
+        // routes registered directly on the app
+        const methods = Object.keys(middleware.route.methods).join(", ").toUpperCase();
+        console.log(`${methods} - ${middleware.route.path}`);
+      } else if (middleware.name === "router" && middleware.handle.stack) {
+        // router middleware
+        middleware.handle.stack.forEach((handler) => {
+          if (handler.route) {
+            const methods = Object.keys(handler.route.methods).join(", ").toUpperCase();
+            console.log(`${methods} - ${handler.route.path}`);
+          }
+        });
+      }
+    });
+  }
 });
+

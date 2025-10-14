@@ -99,7 +99,9 @@ exports.forgotPassword = async (req, res) => {
 
     // Generate reset token (expires in 1 hour)
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    // ✅ Point to frontend HTML page, not backend
+    const resetLink = `${process.env.CLIENT_URL}/reset-password.html/${resetToken}`;
 
     // Send reset email
     const html = `
@@ -113,6 +115,7 @@ exports.forgotPassword = async (req, res) => {
         </div>
       </div>
     `;
+
     await sendEmail(user.email, "🔑 Password Reset Request", html);
 
     res.json({ message: "✅ Password reset link sent to your email" });

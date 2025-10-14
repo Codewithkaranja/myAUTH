@@ -13,23 +13,18 @@ const app = express();
 // === CHECK REQUIRED ENV VARS ===
 const requiredEnvs = ["MONGO_URI", "JWT_SECRET", "CLIENT_URL"];
 let missingEnv = false;
+
 for (const key of requiredEnvs) {
   if (!process.env[key]) {
     console.error(`❌ Missing required env variable: ${key}`);
     missingEnv = true;
   }
 }
+
 if (missingEnv) {
   console.error("❌ Exiting due to missing environment variables.");
   process.exit(1);
 }
-
-// ==========================
-// === DEBUG LOGGING ===
-app.use((req, res, next) => {
-  console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
-  next();
-});
 
 // ==========================
 // === MIDDLEWARES ===
@@ -37,6 +32,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(cookieParser());
+
+// ==========================
+// === DEBUG LOGGING ===
+app.use((req, res, next) => {
+  console.log(`Incoming request: ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 // ==========================
 // === CORS CONFIGURATION ===
@@ -58,8 +60,8 @@ app.use(
 );
 
 // ==========================
-// === DATABASE CONNECTION ===
-const connectDB = async () => {
+// === DATABASE CONNECTION WITH RETRY ===
+const connectDB = async (retries = 5, delay = 3000) => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
@@ -67,8 +69,13 @@ const connectDB = async () => {
     });
     console.log("✅ MongoDB connected successfully");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-    console.warn("⚠️ Server will still start, but DB may be unavailable.");
+    console.error(`❌ MongoDB connection error: ${err.message}`);
+    if (retries > 0) {
+      console.log(`🔁 Retrying to connect in ${delay / 1000}s... (${retries} retries left)`);
+      setTimeout(() => connectDB(retries - 1, delay), delay);
+    } else {
+      console.error("❌ Could not connect to MongoDB. Server will still start, but DB routes may fail.");
+    }
   }
 };
 connectDB();

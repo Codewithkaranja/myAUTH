@@ -12,11 +12,16 @@ const app = express();
 // ==========================
 // === CHECK REQUIRED ENV VARS ===
 const requiredEnvs = ["MONGO_URI", "JWT_SECRET", "CLIENT_URL"];
+let missingEnv = false;
 for (const key of requiredEnvs) {
   if (!process.env[key]) {
     console.error(`❌ Missing required env variable: ${key}`);
-    process.exit(1);
+    missingEnv = true;
   }
+}
+if (missingEnv) {
+  console.error("❌ Exiting due to missing environment variables.");
+  process.exit(1);
 }
 
 // ==========================
@@ -54,13 +59,19 @@ app.use(
 
 // ==========================
 // === DATABASE CONNECTION ===
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected successfully"))
-  .catch((err) => {
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("✅ MongoDB connected successfully");
+  } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1); // exit if DB connection fails
-  });
+    console.warn("⚠️ Server will still start, but DB may be unavailable.");
+  }
+};
+connectDB();
 
 // ==========================
 // === ROUTES ===

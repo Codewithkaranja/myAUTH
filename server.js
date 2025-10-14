@@ -1,8 +1,4 @@
-// ==========================
-// === LOAD ENVIRONMENT ===
-// ==========================
-require("dotenv").config(); // ✅ MUST be first line
-
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
@@ -14,10 +10,13 @@ const protect = require("./middleware/authMiddleware");
 const app = express();
 
 // ==========================
-// === ENV CHECKS ===
-if (!process.env.MONGO_URI) {
-  console.error("❌ MONGO_URI not found in .env. Exiting...");
-  process.exit(1);
+// === CHECK REQUIRED ENV VARS ===
+const requiredEnvs = ["MONGO_URI", "JWT_SECRET", "CLIENT_URL"];
+for (const key of requiredEnvs) {
+  if (!process.env[key]) {
+    console.error(`❌ Missing required env variable: ${key}`);
+    process.exit(1);
+  }
 }
 
 // ==========================
@@ -45,15 +44,9 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (Postman, Thunder Client)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(
-          new Error("CORS not allowed for this origin: " + origin)
-        );
-      }
+      if (!origin) return callback(null, true); // allow Postman/Thunder Client
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS not allowed for origin: ${origin}`));
     },
     credentials: true,
   })
@@ -64,13 +57,14 @@ app.use(
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected successfully"))
-  .catch((err) =>
-    console.error("❌ MongoDB connection error:", err.message)
-  );
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1); // exit if DB connection fails
+  });
 
 // ==========================
 // === ROUTES ===
-app.use("/api/auth", authRoutes); // ✅ All auth routes (register, login, etc.)
+app.use("/api/auth", authRoutes);
 
 // Example protected route
 app.get("/api/protected", protect, (req, res) => {
@@ -100,13 +94,11 @@ app.listen(PORT, () => {
     console.log("📌 Registered Routes:");
     app._router.stack.forEach((middleware) => {
       if (middleware.route) {
-        // Direct routes
         const methods = Object.keys(middleware.route.methods)
           .join(", ")
           .toUpperCase();
         console.log(`${methods} - ${middleware.route.path}`);
       } else if (middleware.name === "router" && middleware.handle.stack) {
-        // Router middleware
         middleware.handle.stack.forEach((handler) => {
           if (handler.route) {
             const methods = Object.keys(handler.route.methods)

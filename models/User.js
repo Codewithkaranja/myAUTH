@@ -13,6 +13,9 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true, minlength: 8 },
+    passwordResetToken: { type: String },
+    passwordResetExpires: { type: Date },
+
 
     // Email verification
     isVerified: { type: Boolean, default: false },

@@ -115,6 +115,27 @@
         color: #475569;
         margin-top: 8px;
       }
+      /* Spinner */
+      .spinner {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 3px solid #ffffff; /* Background color */
+        border-top: 3px solid #4f46e5; /* Spinner color */
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
 
@@ -273,7 +294,6 @@
             "Password must include uppercase, lowercase, number, symbol, and be 8+ chars.";
           return;
         }
-
         if (password !== confirmPassword) {
           msgEl.style.color = "#dc2626";
           msgEl.innerText = "Passwords do not match!";
@@ -281,8 +301,13 @@
         }
 
         try {
+          // Show spinner on the button
+          const submitBtn = form.querySelector("button[type='submit']");
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = `Registering... <span class='spinner'></span>`;
+
           msgEl.style.color = "#4f46e5";
-          msgEl.innerText = "Registering...";
+          msgEl.innerText = "";
           noteEl.innerText = "";
 
           const res = await fetch(`${API_URL}/api/auth/register`, {
@@ -313,9 +338,16 @@
             msgEl.style.color = "#dc2626";
             msgEl.innerText = data.message || "Registration failed.";
           }
+
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Register"; // Reset button text
         } catch {
           msgEl.style.color = "#dc2626";
           msgEl.innerText = "Network error. Please try again.";
+
+          const submitBtn = form.querySelector("button[type='submit']");
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Register";
         }
       });
     </script>

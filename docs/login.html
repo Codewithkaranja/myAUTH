@@ -100,6 +100,27 @@
       #resend a:hover {
         text-decoration: underline;
       }
+      /* Spinner */
+      .spinner {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 3px solid #ffffff; /* Background color */
+        border-top: 3px solid #4f46e5; /* Spinner color */
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
@@ -123,6 +144,9 @@
         Didn’t get the verification email?
         <a href="#" id="resendLink">Resend it</a>
       </p>
+      <p id="forgot">
+        <a href="forgot-password.html" id="forgotLink">Forgot Password?</a>
+      </p>
     </div>
 
     <script>
@@ -132,27 +156,44 @@
       const resendEl = document.getElementById("resend");
       const resendLink = document.getElementById("resendLink");
 
+      // ==========================
+      // Show password reset message if coming from reset page
+      // ==========================
+      const urlParams = new URLSearchParams(window.location.search);
+      const resetStatus = urlParams.get("reset");
+      if (resetStatus === "success") {
+        msgEl.style.color = "#16a34a";
+        msgEl.innerText =
+          "✅ Password reset successful! Please log in with your new password.";
+      } else if (resetStatus === "failed") {
+        msgEl.style.color = "#dc2626";
+        msgEl.innerText = "❌ Password reset failed. Please try again.";
+      }
+
+      // ==========================
+      // Login form submit
+      // ==========================
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value.trim();
 
-        msgEl.innerText = "Logging in...";
+        // Show loading spinner
         msgEl.style.color = "#4f46e5";
+        msgEl.innerHTML = "Logging in... <span class='spinner'>⏳</span>";
         resendEl.style.display = "none";
 
         try {
           const res = await fetch(`${API_URL}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include", // ✅ Include cookies
+            credentials: "include",
             body: JSON.stringify({ email, password }),
           });
 
           const data = await res.json();
 
           if (res.ok) {
-            // Save tokens in localStorage
             if (data.accessToken)
               localStorage.setItem("accessToken", data.accessToken);
             if (data.refreshToken)
@@ -165,7 +206,6 @@
             msgEl.style.color = "#dc2626";
             msgEl.innerText = data.message || "Login failed";
 
-            // Show resend option if account is unverified
             if (data.message && data.message.toLowerCase().includes("verify")) {
               resendEl.style.display = "block";
             }
@@ -176,7 +216,9 @@
         }
       });
 
+      // ==========================
       // Resend verification email
+      // ==========================
       resendLink.addEventListener("click", async (e) => {
         e.preventDefault();
         const email = document.getElementById("email").value.trim();
@@ -186,8 +228,10 @@
           return;
         }
 
-        msgEl.innerText = "Resending verification email...";
+        // Show spinner
         msgEl.style.color = "#4f46e5";
+        msgEl.innerHTML =
+          "Resending verification email... <span class='spinner'>⏳</span>";
 
         try {
           const res = await fetch(`${API_URL}/api/auth/resend-verification`, {

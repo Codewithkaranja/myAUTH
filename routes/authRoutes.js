@@ -26,4 +26,10 @@ router.post("/refresh-token", authController.refreshToken);
 // 🔹 Logout
 router.post("/logout", authController.logout);
 
+// 🔹 Forgot password (send reset link)
+router.post("/forgot-password", authController.forgotPassword);
+
+// 🔹 Reset password (update password using token)
+router.post("/reset-password/:token", authController.resetPassword);
+
 module.exports = router;

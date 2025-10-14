@@ -1,28 +1,29 @@
-// utils/sendEmail.js
 const nodemailer = require("nodemailer");
 
-// Generic email sender
+// ---------- Generic email sender ----------
 const sendEmail = async (to, subject, htmlContent) => {
+  // Create transporter using Mailtrap credentials
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: process.env.MAIL_HOST,
+    port: process.env.MAIL_PORT,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
     },
   });
 
   const mailOptions = {
-    from: `"MyAuth System" <${process.env.EMAIL_USER}>`,
+    from: process.env.MAIL_FROM || '"MyAuth System" <no-reply@myauth.com>',
     to,
     subject,
     html: htmlContent,
   };
 
-  await transporter.sendMail(mailOptions);
-  console.log(`✅ Email sent to ${to}`);
+  const info = await transporter.sendMail(mailOptions);
+  console.log(`📧 Email sent to ${to} | Message ID: ${info.messageId}`);
 };
 
-// ===== Specific helper: verification email =====
+// ---------- Specific helper: verification email ----------
 const sendVerificationEmail = async (to, firstName, token) => {
   const verifyLink = `${process.env.CLIENT_URL}/api/auth/verify-email/${token}`;
   const htmlContent = `
@@ -33,7 +34,7 @@ const sendVerificationEmail = async (to, firstName, token) => {
         <div style="text-align:center; margin:30px 0;">
           <a href="${verifyLink}" style="background:#4f46e5; color:#fff; padding:12px 25px; text-decoration:none; border-radius:5px;">Verify Email</a>
         </div>
-        <p style="font-size:13px; color:#888;">Expires in 24 hours.</p>
+        <p style="font-size:13px; color:#888;">This link expires in 24 hours.</p>
       </div>
     </div>
   `;

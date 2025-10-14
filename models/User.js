@@ -44,5 +44,13 @@ userSchema.methods.generateVerificationToken = function () {
   this.verificationToken = token;
   return token;
 };
+// Generate password reset token
+userSchema.methods.generatePasswordResetToken = function () {
+  const token = crypto.randomBytes(32).toString("hex");
+  this.passwordResetToken = token;
+  this.passwordResetExpires = Date.now() + 3600000; // 1 hour
+  return token;
+};
+
 
 module.exports = mongoose.model("User", userSchema);

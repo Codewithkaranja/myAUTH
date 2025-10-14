@@ -2,53 +2,89 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
 
+// Utility to safely build links
+const buildVerifyLink = (token) => {
+  // Ensure no trailing slash in CLIENT_URL
+  const baseUrl = process.env.CLIENT_URL?.replace(/\/+$/, "") || "http://localhost:3000";
+  return `${baseUrl}/api/auth/verify-email/${token}`;
+};
+
 // -------------------------
 // REGISTER
 // -------------------------
 exports.register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, gender, dob, address, idNumber, phone } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      gender,
+      dob,
+      address,
+      idNumber,
+      phone,
+    } = req.body;
 
-    // Check for existing email, phone, or idNumber
+    // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { phone }, { idNumber }]
+      $or: [{ email }, { phone }, { idNumber }],
     });
     if (existingUser) {
-      let field = existingUser.email === email ? "Email" :
-                  existingUser.phone === phone ? "Phone" :
-                  "ID Number";
+      const field =
+        existingUser.email === email
+          ? "Email"
+          : existingUser.phone === phone
+          ? "Phone"
+          : "ID Number";
       return res.status(400).json({ message: `${field} already registered` });
     }
 
-    const user = new User({ firstName, lastName, email, password, gender, dob, address, idNumber, phone });
+    // Create and save new user
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password,
+      gender,
+      dob,
+      address,
+      idNumber,
+      phone,
+    });
     await user.save();
 
-    // Generate email verification token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    const verifyLink = `${process.env.CLIENT_URL}/api/auth/verify-email/${token}`;
+    // Generate verification token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
 
-    // Send email but don’t block registration if email fails
+    // Build safe link
+    const verifyLink = buildVerifyLink(token);
+
+    // Send email (non-blocking)
     try {
       await sendEmail(
         user.email,
         "Verify Your Account",
         `<h2>Welcome, ${user.firstName} 👋</h2>
          <p>Click below to verify your email:</p>
-         <a href="${verifyLink}">Verify Email</a>`
+         <a href="${verifyLink}" target="_blank">Verify Email</a>
+         <br><br>
+         <p>This link expires in 24 hours.</p>`
       );
     } catch (emailErr) {
-      console.error("❌ Email sending failed:", emailErr);
+      console.error("❌ Email sending failed:", emailErr.message);
     }
 
     res.status(201).json({
-      message: "✅ Registration successful! Check your email to verify your account."
+      message: "✅ Registration successful! Check your email to verify your account.",
     });
-
   } catch (err) {
     console.error("❌ Registration error:", err);
-    res.status(500).json({ 
-      message: "Server error during registration", 
-      error: err.message // <--- shows exact error
+    res.status(500).json({
+      message: "Server error during registration",
+      error: err.message,
     });
   }
 };
@@ -62,8 +98,10 @@ exports.verifyEmail = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id);
-    if (!user) return res.status(400).send("<h2>Invalid token or user not found.</h2>");
-    if (user.isVerified) return res.send("<h2>Email already verified ✅</h2>");
+    if (!user)
+      return res.status(400).send("<h2>Invalid token or user not found.</h2>");
+    if (user.isVerified)
+      return res.send("<h2>Email already verified ✅</h2>");
 
     user.isVerified = true;
     await user.save();
@@ -83,11 +121,15 @@ exports.resendVerification = async (req, res) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(404).json({ message: "No user found with this email" });
-    if (user.isVerified) return res.status(400).json({ message: "Email already verified" });
+    if (!user)
+      return res.status(404).json({ message: "No user found with this email" });
+    if (user.isVerified)
+      return res.status(400).json({ message: "Email already verified" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    const verifyLink = `${process.env.CLIENT_URL}/api/auth/verify-email/${token}`;
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+    const verifyLink = buildVerifyLink(token);
 
     try {
       await sendEmail(
@@ -95,15 +137,18 @@ exports.resendVerification = async (req, res) => {
         "Resend: Verify Your Account",
         `<h2>Hi ${user.firstName} 👋</h2>
          <p>Here’s a new verification link for your account:</p>
-         <a href="${verifyLink}">Verify Email</a>`
+         <a href="${verifyLink}" target="_blank">Verify Email</a>`
       );
     } catch (emailErr) {
-      console.error("❌ Resend email failed:", emailErr);
+      console.error("❌ Resend email failed:", emailErr.message);
     }
 
     res.json({ message: "✅ Verification email resent successfully" });
   } catch (err) {
     console.error("❌ Resend verification error:", err);
-    res.status(500).json({ message: "Error resending verification email", error: err.message });
+    res.status(500).json({
+      message: "Error resending verification email",
+      error: err.message,
+    });
   }
 };

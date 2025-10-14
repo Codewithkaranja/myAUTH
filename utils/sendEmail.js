@@ -1,22 +1,21 @@
-// utils/sendEmail.js
 const nodemailer = require("nodemailer");
 
+// ---------- TRANSPORTER ----------
 const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
-  port: process.env.MAIL_PORT,
+  port: Number(process.env.MAIL_PORT),
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
+  secure: false,   // Mailtrap usually works with false
+  logger: true,    // log SMTP activity
+  debug: true,     // detailed debug info
 });
 
-
-/**
- * Generic email sender
- */
 const sendEmail = async (to, subject, htmlContent) => {
   const mailOptions = {
-    from: '"MyAuth System" <noreply@myauth.com>',
+    from: process.env.MAIL_FROM,
     to,
     subject,
     html: htmlContent,
@@ -26,9 +25,6 @@ const sendEmail = async (to, subject, htmlContent) => {
   console.log(`📧 Email sent to ${to}`);
 };
 
-/**
- * Verification email helper
- */
 const sendVerificationEmail = async (user, token) => {
   const verifyLink = `${process.env.CLIENT_URL}/api/auth/verify-email/${token}`;
   const html = `

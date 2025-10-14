@@ -1,47 +1,49 @@
+// utils/sendEmail.js
 const nodemailer = require("nodemailer");
 
-// ---------- Generic email sender ----------
-const sendEmail = async (to, subject, htmlContent) => {
-  // Create transporter using Mailtrap credentials
-  const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: process.env.MAIL_PORT,
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
-    },
-  });
+const transporter = nodemailer.createTransport({
+  host: process.env.MAIL_HOST,
+  port: process.env.MAIL_PORT,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
 
+
+/**
+ * Generic email sender
+ */
+const sendEmail = async (to, subject, htmlContent) => {
   const mailOptions = {
-    from: process.env.MAIL_FROM || '"MyAuth System" <no-reply@myauth.com>',
+    from: '"MyAuth System" <noreply@myauth.com>',
     to,
     subject,
     html: htmlContent,
   };
 
-  const info = await transporter.sendMail(mailOptions);
-  console.log(`📧 Email sent to ${to} | Message ID: ${info.messageId}`);
+  await transporter.sendMail(mailOptions);
+  console.log(`📧 Email sent to ${to}`);
 };
 
-// ---------- Specific helper: verification email ----------
-const sendVerificationEmail = async (to, firstName, token) => {
+/**
+ * Verification email helper
+ */
+const sendVerificationEmail = async (user, token) => {
   const verifyLink = `${process.env.CLIENT_URL}/api/auth/verify-email/${token}`;
-  const htmlContent = `
+  const html = `
     <div style="font-family: Arial, sans-serif; background: #f4f6f8; padding: 30px;">
       <div style="max-width: 500px; margin: auto; background: #fff; padding: 25px; border-radius: 10px;">
-        <h2 style="text-align:center;">Welcome, ${firstName} 👋</h2>
-        <p>Please verify your email:</p>
+        <h2>Welcome, ${user.firstName} 👋</h2>
+        <p>Thank you for signing up. Please verify your email address by clicking the button below:</p>
         <div style="text-align:center; margin:30px 0;">
           <a href="${verifyLink}" style="background:#4f46e5; color:#fff; padding:12px 25px; text-decoration:none; border-radius:5px;">Verify Email</a>
         </div>
-        <p style="font-size:13px; color:#888;">This link expires in 24 hours.</p>
+        <p style="font-size:13px; color:#888;">This link will expire in 24 hours.</p>
       </div>
     </div>
   `;
-  await sendEmail(to, "✅ Verify your MyAuth account", htmlContent);
+  await sendEmail(user.email, "✅ Verify your MyAuth account", html);
 };
 
-module.exports = {
-  sendEmail,             // generic
-  sendVerificationEmail, // specific helper
-};
+module.exports = { sendEmail, sendVerificationEmail };

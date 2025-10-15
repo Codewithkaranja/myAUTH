@@ -148,3 +148,71 @@ exports.resetPassword = async (req, res) => {
     res.status(400).json({ message: "Invalid or expired token", error: err.message });
   }
 };
+// ==========================
+// REGISTER + EMAIL VERIFICATION
+// ==========================
+exports.register = async (req, res) => {
+  try {
+    const { firstName, email, password } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: "User already exists" });
+
+    const user = await User.create({ firstName, email, password, isVerified: false });
+
+    // Create email verification token (expires in 1 day)
+    const verifyToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    // ✅ Use FRONTEND GitHub Pages link (NOT backend)
+    const verifyUrl = `https://codewithkaranja.github.io/myAUTH/verify-email.html?token=${verifyToken}`;
+
+    // Email content
+    const html = `
+      <div style="font-family:Arial, sans-serif;background:#f4f6f8;padding:30px;">
+        <div style="max-width:500px;margin:auto;background:#fff;padding:25px;border-radius:10px;">
+          <h2>Welcome to MyAuth 🎉</h2>
+          <p>Click the button below to verify your email address:</p>
+          <div style="text-align:center;margin:30px 0;">
+            <a href="${verifyUrl}" 
+               style="background:#4f46e5;color:#fff;padding:12px 25px;
+                      text-decoration:none;border-radius:5px;">Verify Email</a>
+          </div>
+          <p>If you didn’t create this account, please ignore this email.</p>
+        </div>
+      </div>
+    `;
+
+    await sendEmail(user.email, "✅ Verify Your Email", html);
+
+    res.status(201).json({ message: "✅ Registration successful! Please check your email to verify your account." });
+  } catch (err) {
+    console.error("❌ Register error:", err);
+    res.status(500).json({ message: "Server error during registration" });
+  }
+};
+
+// ==========================
+// VERIFY EMAIL
+// ==========================
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    if (user.isVerified) {
+      return res.json({ success: true, message: "Email already verified" });
+    }
+
+    user.isVerified = true;
+    await user.save();
+
+    res.json({ success: true, message: "✅ Email verified successfully" });
+  } catch (err) {
+    console.error("❌ Verify email error:", err);
+    res.status(400).json({ success: false, message: "Invalid or expired token" });
+  }
+};
+

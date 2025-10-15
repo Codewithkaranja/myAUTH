@@ -90,11 +90,11 @@
       const msgEl = document.getElementById("message");
       const loginBtn = document.getElementById("loginBtn");
 
-      // Extract token from last segment of URL path
-      const pathParts = window.location.pathname.split("/");
-      const token = pathParts[pathParts.length - 1];
+      // ✅ Extract token from query string (after ?token=)
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
 
-      if (!token || token === "verify-email.html") {
+      if (!token) {
         msgEl.style.color = "#dc2626";
         msgEl.innerText = "Invalid or missing verification token.";
       } else {

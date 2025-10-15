@@ -101,7 +101,9 @@ exports.forgotPassword = async (req, res) => {
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     // ✅ Point to frontend HTML page, not backend
-    const resetLink = `${process.env.CLIENT_URL}/reset-password.html/${resetToken}`;
+    // In authController forgotPassword function
+const resetLink = `${process.env.CLIENT_URL}/reset-password.html?token=${resetToken}`;
+
 
     // Send reset email
     const html = `

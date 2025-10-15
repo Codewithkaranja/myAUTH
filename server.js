@@ -26,22 +26,27 @@ app.use((req, res, next) => {
 });
 
 // ---------- CORS ----------
+// ---------- CORS ----------
 const allowedOrigins = [
   process.env.CLIENT_URL,
   "http://127.0.0.1:5500",
   "http://localhost:5500",
+  "https://codewithkaranja.github.io", // ✅ GitHub Pages
 ];
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      // Allow requests with no origin (e.g., curl, Postman, or some GitHub Pages fetches)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       console.warn(`🚫 Blocked CORS origin: ${origin}`);
       callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-    optionsSuccessStatus: 200,
   })
 );
+
 
 // ---------- DB CONNECTION ----------
 const connectDB = async () => {
